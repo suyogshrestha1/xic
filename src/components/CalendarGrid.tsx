@@ -144,21 +144,21 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
               className={`${cellBg} min-h-[55px] sm:min-h-[95px] p-1 sm:p-2 cursor-pointer transition-all flex flex-col justify-between group relative active:bg-slate-100`}
             >
               {/* Top Row: Nepali Date + TODAY Badge + Gregorian Date */}
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-1">
-                  <span className={`text-sm sm:text-xl font-bold font-serif leading-none ${
+              <div className="flex items-start justify-between gap-0.5">
+                <div className="flex items-center gap-0.5 sm:gap-1">
+                  <span className={`text-xs sm:text-xl font-bold font-serif leading-none ${
                     hasHoliday ? 'text-rose-600' : 'text-slate-800'
                   }`}>
                     {dayNum}
                   </span>
                   {isToday && (
-                    <span className="px-1 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-cyan-600 text-white leading-none shadow-2xs">
+                    <span className="px-1 py-0.5 rounded text-[7px] sm:text-[8px] font-black uppercase tracking-wider bg-cyan-600 text-white leading-none shadow-2xs">
                       Today
                     </span>
                   )}
                 </div>
 
-                <span className="text-[8px] sm:text-xs text-slate-400 font-medium tracking-tight truncate max-w-[28px] sm:max-w-none">
+                <span className="text-[7px] sm:text-xs text-slate-400 font-medium tracking-tight truncate max-w-[26px] sm:max-w-none">
                   {gregorianStr}
                 </span>
               </div>

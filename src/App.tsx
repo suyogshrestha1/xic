@@ -174,16 +174,24 @@ export function App() {
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
         
         {/* Today Status Bar */}
-        <div className="bg-gradient-to-r from-slate-900 to-xavier-navy text-white rounded-xl shadow-sm border border-slate-800 p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm">
+        <div 
+          onClick={() => handleSelectDate(todayInfo.day)}
+          className="bg-gradient-to-r from-slate-900 via-xavier-navy to-slate-900 text-white rounded-xl shadow-sm border border-slate-800 p-3.5 sm:p-4 mb-4 sm:mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs sm:text-sm cursor-pointer hover:border-cyan-500/50 transition-all active:scale-[0.99]"
+        >
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-400/30 flex items-center justify-center font-bold shrink-0">
               <CalendarIcon className="w-4 h-4" />
             </div>
             <div>
-              <span className="text-cyan-400 font-bold uppercase tracking-wider text-[11px] block">
-                Today's Date: {todayInfo.nepaliDateStr} ({todayInfo.gregorianDateStr})
-              </span>
-              <span className="font-semibold text-white text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-cyan-400 font-bold uppercase tracking-wider text-[10px] sm:text-[11px]">
+                  Today's Date: {todayInfo.nepaliDateStr} ({todayInfo.gregorianDateStr})
+                </span>
+                <span className="px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider bg-cyan-600 text-white rounded shadow-2xs">
+                  Active
+                </span>
+              </div>
+              <span className="font-semibold text-white text-xs sm:text-sm block mt-0.5">
                 {todayEvents.length > 0
                   ? `Today's Event: ${todayEvents[0].title}`
                   : 'No special event today.'}
@@ -191,14 +199,19 @@ export function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 bg-slate-800/80 px-3.5 py-2 rounded-lg border border-slate-700/60 text-slate-200">
-            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>
-              <strong>Next Upcoming Event:</strong> {nextImportantEvent.title} ({nextImportantEvent.nepaliDate} {nextImportantEvent.nepaliMonth.split(' ')[0]})
-            </span>
+          <div className="flex items-center justify-between sm:justify-end gap-2 bg-slate-800/80 px-3 py-2 rounded-lg border border-slate-700/60 text-slate-200 text-xs">
+            <div className="flex items-center gap-1.5 truncate">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="truncate">
+                <strong>Next:</strong> {nextImportantEvent.title} ({nextImportantEvent.nepaliDate} {nextImportantEvent.nepaliMonth.split(' ')[0]})
+              </span>
+            </div>
             <button
-              onClick={() => handleSelectEvent(nextImportantEvent)}
-              className="text-cyan-400 font-semibold hover:underline flex items-center gap-0.5 ml-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSelectEvent(nextImportantEvent);
+              }}
+              className="text-cyan-400 font-bold hover:underline flex items-center gap-0.5 ml-1 shrink-0"
             >
               Details <ChevronRight className="w-3 h-3" />
             </button>
