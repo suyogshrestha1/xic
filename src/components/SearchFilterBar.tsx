@@ -1,6 +1,5 @@
 import React from 'react';
-import { Search, Filter, SortAsc, X, GraduationCap, Calendar as CalendarIcon } from 'lucide-react';
-import { CategoryType, GradeType } from '../types/calendar';
+import { Search, Filter, SortAsc, X, GraduationCap } from 'lucide-react';
 
 interface SearchFilterBarProps {
   searchQuery: string;
@@ -55,8 +54,8 @@ export const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
   activeFilterCount,
 }) => {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6 transition-all">
-      <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+    <div className="bg-white rounded-xl shadow-xs border border-slate-200 p-3 sm:p-4 mb-4 sm:mb-6 transition-all">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
         
         {/* Search Input */}
         <div className="relative w-full lg:w-96">
@@ -67,8 +66,8 @@ export const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search events, e.g. Dashain, Exam, AI, Grade XII..."
-            className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-600 transition-all"
+            placeholder="Search events, e.g. Dashain, Exam, AI..."
+            className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-600 transition-all min-h-[38px]"
           />
           {searchQuery && (
             <button
@@ -80,16 +79,16 @@ export const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
           )}
         </div>
 
-        {/* Filters Group */}
-        <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto justify-start lg:justify-end">
+        {/* Filters Group (Grid on Mobile, Flex on Desktop) */}
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full lg:w-auto">
           
           {/* Category Filter */}
-          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700">
-            <Filter className="w-3.5 h-3.5 text-slate-500" />
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 col-span-1 min-h-[36px]">
+            <Filter className="w-3.5 h-3.5 text-slate-500 shrink-0" />
             <select
               value={selectedCategory}
               onChange={(e) => onCategoryChange(e.target.value)}
-              className="bg-transparent text-xs font-semibold focus:outline-none cursor-pointer"
+              className="bg-transparent text-xs font-semibold focus:outline-none cursor-pointer w-full truncate"
             >
               {CATEGORY_OPTIONS.map((cat) => (
                 <option key={cat.value} value={cat.value}>
@@ -100,12 +99,12 @@ export const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
           </div>
 
           {/* Grade Filter */}
-          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700">
-            <GraduationCap className="w-3.5 h-3.5 text-slate-500" />
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 col-span-1 min-h-[36px]">
+            <GraduationCap className="w-3.5 h-3.5 text-slate-500 shrink-0" />
             <select
               value={selectedGrade}
               onChange={(e) => onGradeChange(e.target.value)}
-              className="bg-transparent text-xs font-semibold focus:outline-none cursor-pointer"
+              className="bg-transparent text-xs font-semibold focus:outline-none cursor-pointer w-full truncate"
             >
               {GRADE_OPTIONS.map((g) => (
                 <option key={g.value} value={g.value}>
@@ -116,12 +115,12 @@ export const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
           </div>
 
           {/* Sort By */}
-          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700">
-            <SortAsc className="w-3.5 h-3.5 text-slate-500" />
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 col-span-2 sm:col-span-1 min-h-[36px]">
+            <SortAsc className="w-3.5 h-3.5 text-slate-500 shrink-0" />
             <select
               value={sortBy}
               onChange={(e) => onSortChange(e.target.value)}
-              className="bg-transparent text-xs font-semibold focus:outline-none cursor-pointer"
+              className="bg-transparent text-xs font-semibold focus:outline-none cursor-pointer w-full truncate"
             >
               <option value="date-asc">Earliest → Latest</option>
               <option value="date-desc">Latest → Earliest</option>
@@ -134,7 +133,7 @@ export const SearchFilterBar: React.FC<SearchFilterBarProps> = ({
           {activeFilterCount > 0 && (
             <button
               onClick={onClearAll}
-              className="flex items-center gap-1 px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-lg text-xs font-semibold border border-rose-200 transition-all"
+              className="flex items-center justify-center gap-1 px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-lg text-xs font-semibold border border-rose-200 transition-all col-span-2 sm:col-span-1 min-h-[36px]"
             >
               <X className="w-3.5 h-3.5" />
               Reset ({activeFilterCount})
