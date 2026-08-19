@@ -1400,3 +1400,43 @@ export function getGregorianForNepaliDate(monthIndex: number, nepaliDate: number
 export function getAllEvents(): CalendarEvent[] {
   return MONTHS_DATA.flatMap(m => m.events);
 }
+
+export function getCurrentAcademicDate(): { monthIndex: number; day: number; nepaliDateStr: string; gregorianDateStr: string } {
+  const now = new Date();
+  
+  const jsMonthMap: { [key: string]: number } = {
+    Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11, Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4
+  };
+
+  for (let i = 0; i < MONTHS_DATA.length; i++) {
+    const mData = MONTHS_DATA[i];
+    const { month: gMonthStr, day: gDay, year: gYear } = mData.gregorianStart;
+    const jsMonth = jsMonthMap[gMonthStr];
+    
+    if (jsMonth !== undefined) {
+      const startDate = new Date(gYear, jsMonth, gDay);
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + mData.totalDays - 1);
+
+      if (now >= startDate && now <= endDate) {
+        const diffDays = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+        const dayNum = diffDays + 1;
+        const gregorianStr = getGregorianForNepaliDate(i, dayNum);
+        return {
+          monthIndex: i,
+          day: dayNum,
+          nepaliDateStr: `${dayNum} ${mData.name}`,
+          gregorianDateStr: gregorianStr
+        };
+      }
+    }
+  }
+
+  // Default to today's date: 3 Bhadra 2083 (Aug 19)
+  return {
+    monthIndex: 1,
+    day: 3,
+    nepaliDateStr: '3 Bhadra 2083',
+    gregorianDateStr: 'Aug 19'
+  };
+}

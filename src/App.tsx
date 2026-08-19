@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { MONTHS_DATA, getAllEvents } from './data/calendarData';
+import { MONTHS_DATA, getAllEvents, getCurrentAcademicDate } from './data/calendarData';
 import { CalendarEvent, ActiveTab } from './types/calendar';
 import { Header } from './components/Header';
 import { MonthSelector } from './components/MonthSelector';
@@ -13,10 +13,15 @@ import { ProcessBar } from './components/ProcessBar';
 import { RecurringRules } from './components/RecurringRules';
 import { PdfViewerModal } from './components/PdfViewerModal';
 import { Footer } from './components/Footer';
-import { Info, Sparkles, Calendar as CalendarIcon, ChevronRight } from 'lucide-react';
+import { Sparkles, Calendar as CalendarIcon, ChevronRight } from 'lucide-react';
 
 export function App() {
-  const [currentMonthIndex, setCurrentMonthIndex] = useState<number>(0);
+  // Get today's academic date info (e.g. 3 Bhadra 2083 / Aug 19)
+  const todayInfo = useMemo(() => getCurrentAcademicDate(), []);
+
+  const [currentMonthIndex, setCurrentMonthIndex] = useState<number>(todayInfo.monthIndex);
+  const [selectedDateNum, setSelectedDateNum] = useState<number | null>(todayInfo.day);
+
   const [activeTab, setActiveTab] = useState<ActiveTab>('calendar');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -25,18 +30,28 @@ export function App() {
 
   // Modal State
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
-  const [selectedDateNum, setSelectedDateNum] = useState<number | null>(null);
   const [isEventModalOpen, setIsEventModalOpen] = useState<boolean>(false);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState<boolean>(false);
 
   const currentMonth = MONTHS_DATA[currentMonthIndex];
   const allEvents = useMemo(() => getAllEvents(), []);
 
+  // Events for today's date
+  const todayEvents = useMemo(() => {
+    const month = MONTHS_DATA[todayInfo.monthIndex];
+    if (!month) return [];
+    return month.events.filter(e => {
+      if (e.isMultiDay && e.nepaliDateEnd) {
+        return todayInfo.day >= e.nepaliDate && todayInfo.day <= e.nepaliDateEnd;
+      }
+      return e.nepaliDate === todayInfo.day;
+    });
+  }, [todayInfo]);
+
   // Filter & Search Logic
   const filteredEventsForMonth = useMemo(() => {
     let result = currentMonth.events;
 
-    // Search query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = allEvents.filter(ev =>
@@ -50,7 +65,6 @@ export function App() {
       );
     }
 
-    // Category Filter
     if (selectedCategory !== 'All') {
       result = result.filter(ev => 
         ev.category === selectedCategory || 
@@ -58,12 +72,10 @@ export function App() {
       );
     }
 
-    // Grade Filter
     if (selectedGrade !== 'All') {
       result = result.filter(ev => ev.grade === selectedGrade || ev.grade === 'General');
     }
 
-    // Sorting
     result = [...result].sort((a, b) => {
       if (sortBy === 'date-asc') {
         if (a.monthIndex !== b.monthIndex) return a.monthIndex - b.monthIndex;
@@ -85,7 +97,6 @@ export function App() {
     return result;
   }, [currentMonth, searchQuery, selectedCategory, selectedGrade, sortBy, allEvents]);
 
-  // Active filter count calculation
   const activeFilterCount = (searchQuery ? 1 : 0) + (selectedCategory !== 'All' ? 1 : 0) + (selectedGrade !== 'All' ? 1 : 0);
 
   const handleClearFilters = () => {
@@ -95,7 +106,6 @@ export function App() {
     setSortBy('date-asc');
   };
 
-  // Date Click Handler
   const handleSelectDate = (day: number) => {
     setSelectedDateNum(day);
     const dayEvents = currentMonth.events.filter(e => {
@@ -108,25 +118,23 @@ export function App() {
     setIsEventModalOpen(true);
   };
 
-  // Event Click Handler
   const handleSelectEvent = (event: CalendarEvent) => {
     setSelectedEvent(event);
     setSelectedDateNum(event.nepaliDate);
+    setCurrentMonthIndex(event.monthIndex);
     setIsEventModalOpen(true);
   };
 
   const handleGoToToday = () => {
-    // Jump to Shrawan 2083 default
-    setCurrentMonthIndex(0);
-    handleSelectDate(1);
+    const t = getCurrentAcademicDate();
+    setCurrentMonthIndex(t.monthIndex);
+    setSelectedDateNum(t.day);
   };
 
   const handleDownloadPdf = () => {
-    // Triggers download alert / window print or sample PDF
     window.print();
   };
 
-  // Calculate events for selected modal date
   const modalEvents = useMemo(() => {
     if (!selectedDateNum) return selectedEvent ? [selectedEvent] : [];
     return currentMonth.events.filter(e => {
@@ -137,15 +145,16 @@ export function App() {
     });
   }, [selectedDateNum, selectedEvent, currentMonth]);
 
-  // Today Banner status
   const nextImportantEvent = useMemo(() => {
-    return allEvents.find(e => e.mainCategory === 'Exams' || e.mainCategory === 'Holiday') || allEvents[0];
-  }, [allEvents]);
+    return allEvents.find(e => 
+      e.monthIndex > todayInfo.monthIndex || 
+      (e.monthIndex === todayInfo.monthIndex && e.nepaliDate > todayInfo.day)
+    ) || allEvents[0];
+  }, [allEvents, todayInfo]);
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans selection:bg-cyan-500 selection:text-white">
       
-      {/* College Header */}
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -154,7 +163,6 @@ export function App() {
         totalEvents={allEvents.length}
       />
 
-      {/* Month Navigation Strip */}
       <MonthSelector
         currentMonthIndex={currentMonthIndex}
         onSelectMonth={(idx) => setCurrentMonthIndex(idx)}
@@ -163,21 +171,22 @@ export function App() {
         onGoToToday={handleGoToToday}
       />
 
-      {/* Main App Content Area */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
         
         {/* Today Status Bar */}
         <div className="bg-gradient-to-r from-slate-900 to-xavier-navy text-white rounded-xl shadow-sm border border-slate-800 p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+            <div className="w-9 h-9 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-400/30 flex items-center justify-center font-bold shrink-0">
               <CalendarIcon className="w-4 h-4" />
             </div>
             <div>
-              <span className="text-slate-400 font-semibold uppercase tracking-wider text-[11px] block">
-                Today's Status:
+              <span className="text-cyan-400 font-bold uppercase tracking-wider text-[11px] block">
+                Today's Date: {todayInfo.nepaliDateStr} ({todayInfo.gregorianDateStr})
               </span>
-              <span className="font-bold text-white text-sm">
-                No special event today.
+              <span className="font-semibold text-white text-sm">
+                {todayEvents.length > 0
+                  ? `Today's Event: ${todayEvents[0].title}`
+                  : 'No special event today.'}
               </span>
             </div>
           </div>
@@ -185,7 +194,7 @@ export function App() {
           <div className="flex items-center gap-2 bg-slate-800/80 px-3.5 py-2 rounded-lg border border-slate-700/60 text-slate-200">
             <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
             <span>
-              <strong>Next Major Event:</strong> {nextImportantEvent.title} ({nextImportantEvent.nepaliDate} {nextImportantEvent.nepaliMonth.split(' ')[0]})
+              <strong>Next Upcoming Event:</strong> {nextImportantEvent.title} ({nextImportantEvent.nepaliDate} {nextImportantEvent.nepaliMonth.split(' ')[0]})
             </span>
             <button
               onClick={() => handleSelectEvent(nextImportantEvent)}
@@ -196,7 +205,6 @@ export function App() {
           </div>
         </div>
 
-        {/* Global Search & Filter Bar */}
         <SearchFilterBar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -210,12 +218,9 @@ export function App() {
           activeFilterCount={activeFilterCount}
         />
 
-        {/* Tab View: Calendar View (Default) */}
         {activeTab === 'calendar' && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-              
-              {/* Monthly Interactive Calendar Grid (2 Cols Desktop) */}
               <div className="lg:col-span-2">
                 <CalendarGrid
                   month={currentMonth}
@@ -223,10 +228,11 @@ export function App() {
                   onSelectEvent={handleSelectEvent}
                   selectedDay={selectedDateNum}
                   filteredEvents={filteredEventsForMonth}
+                  todayMonthIndex={todayInfo.monthIndex}
+                  todayDay={todayInfo.day}
                 />
               </div>
 
-              {/* Key Events Right Sidebar (1 Col Desktop) */}
               <div className="lg:col-span-1">
                 <EventCardList
                   month={currentMonth}
@@ -235,30 +241,23 @@ export function App() {
                   selectedEventId={selectedEvent?.id}
                 />
               </div>
-
             </div>
 
-            {/* 9-Step Lifecycle Bar */}
             <ProcessBar />
-
-            {/* Persistent Recurring Rules Section */}
             <RecurringRules />
           </div>
         )}
 
-        {/* Tab View: Holidays & Vacations */}
         {activeTab === 'holidays' && (
           <HolidayView onSelectEvent={handleSelectEvent} />
         )}
 
-        {/* Tab View: Exams Hub */}
         {activeTab === 'exams' && (
           <ExamView onSelectEvent={handleSelectEvent} />
         )}
 
       </main>
 
-      {/* Date & Event Details Modal */}
       <EventModal
         isOpen={isEventModalOpen}
         onClose={() => setIsEventModalOpen(false)}
@@ -267,14 +266,12 @@ export function App() {
         monthName={currentMonth.name}
       />
 
-      {/* Original PDF Document Viewer Modal */}
       <PdfViewerModal
         isOpen={isPdfModalOpen}
         onClose={() => setIsPdfModalOpen(false)}
         onDownload={handleDownloadPdf}
       />
 
-      {/* Creator Credit Footer */}
       <Footer />
 
     </div>

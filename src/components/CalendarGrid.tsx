@@ -8,6 +8,8 @@ interface CalendarGridProps {
   onSelectEvent: (event: CalendarEvent) => void;
   selectedDay: number | null;
   filteredEvents: CalendarEvent[];
+  todayMonthIndex?: number;
+  todayDay?: number;
 }
 
 export const CalendarGrid: React.FC<CalendarGridProps> = ({
@@ -16,6 +18,8 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   onSelectEvent,
   selectedDay,
   filteredEvents,
+  todayMonthIndex,
+  todayDay,
 }) => {
   const daysOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
@@ -110,14 +114,19 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
           const isSaturday = dayOfWeek === 6;
           const dayEvents = eventsByDay[dayNum] || [];
           const isSelected = selectedDay === dayNum;
+          const isToday = todayMonthIndex === month.index && todayDay === dayNum;
 
           const hasHoliday = isSaturday || dayEvents.some(e => e.mainCategory === 'Holiday');
           const hasExam = dayEvents.some(e => e.mainCategory === 'Exams');
           const hasClassTest = dayEvents.some(e => e.mainCategory === 'Class Test Day');
 
           let cellBg = 'bg-white hover:bg-slate-50';
-          if (isSelected) {
+          if (isSelected && isToday) {
+            cellBg = 'bg-cyan-50 ring-2 ring-cyan-600 z-20 shadow-sm';
+          } else if (isSelected) {
             cellBg = 'bg-amber-50 ring-2 ring-amber-500 z-10';
+          } else if (isToday) {
+            cellBg = 'bg-cyan-50/90 ring-2 ring-cyan-500/80 z-10';
           } else if (hasHoliday) {
             cellBg = 'bg-rose-50/70 hover:bg-rose-100/60';
           } else if (hasExam) {
@@ -134,13 +143,20 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
               onClick={() => onSelectDate(dayNum)}
               className={`${cellBg} min-h-[55px] sm:min-h-[95px] p-1 sm:p-2 cursor-pointer transition-all flex flex-col justify-between group relative active:bg-slate-100`}
             >
-              {/* Top Row: Nepali Date + Gregorian Date */}
+              {/* Top Row: Nepali Date + TODAY Badge + Gregorian Date */}
               <div className="flex items-start justify-between">
-                <span className={`text-sm sm:text-xl font-bold font-serif leading-none ${
-                  hasHoliday ? 'text-rose-600' : 'text-slate-800'
-                }`}>
-                  {dayNum}
-                </span>
+                <div className="flex items-center gap-1">
+                  <span className={`text-sm sm:text-xl font-bold font-serif leading-none ${
+                    hasHoliday ? 'text-rose-600' : 'text-slate-800'
+                  }`}>
+                    {dayNum}
+                  </span>
+                  {isToday && (
+                    <span className="px-1 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-cyan-600 text-white leading-none shadow-2xs">
+                      Today
+                    </span>
+                  )}
+                </div>
 
                 <span className="text-[8px] sm:text-xs text-slate-400 font-medium tracking-tight truncate max-w-[28px] sm:max-w-none">
                   {gregorianStr}
