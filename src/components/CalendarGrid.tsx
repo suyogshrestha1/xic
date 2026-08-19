@@ -1,0 +1,239 @@
+import React from 'react';
+import { MonthData, CalendarEvent, CategoryType } from '../types/calendar';
+import { getGregorianForNepaliDate } from '../data/calendarData';
+
+interface CalendarGridProps {
+  month: MonthData;
+  onSelectDate: (day: number) => void;
+  onSelectEvent: (event: CalendarEvent) => void;
+  selectedDay: number | null;
+  filteredEvents: CalendarEvent[];
+}
+
+export const CalendarGrid: React.FC<CalendarGridProps> = ({
+  month,
+  onSelectDate,
+  onSelectEvent,
+  selectedDay,
+  filteredEvents,
+}) => {
+  const daysOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+  // Map events by day number
+  const eventsByDay: { [day: number]: CalendarEvent[] } = {};
+  
+  // We use filteredEvents if filtering is applied, else month.events
+  const displayEvents = filteredEvents.length > 0 ? filteredEvents : month.events;
+
+  displayEvents.forEach(event => {
+    if (event.monthIndex === month.index) {
+      if (event.isMultiDay && event.nepaliDateEnd) {
+        for (let d = event.nepaliDate; d <= event.nepaliDateEnd; d++) {
+          if (!eventsByDay[d]) eventsByDay[d] = [];
+          if (!eventsByDay[d].some(e => e.id === event.id)) {
+            eventsByDay[d].push(event);
+          }
+        }
+      } else {
+        const d = event.nepaliDate;
+        if (!eventsByDay[d]) eventsByDay[d] = [];
+        if (!eventsByDay[d].some(e => e.id === event.id)) {
+          eventsByDay[d].push(event);
+        }
+      }
+    }
+  });
+
+  // Calculate empty leading cells
+  const leadingEmptyCells = month.startDayOfWeek;
+  const totalGridCells = leadingEmptyCells + month.totalDays;
+  const trailingEmptyCells = (7 - (totalGridCells % 7)) % 7;
+
+  // Helper for category color styles
+  const getCategoryStyles = (event: CalendarEvent) => {
+    switch (event.mainCategory) {
+      case 'Holiday':
+        return 'bg-rose-100 text-rose-800 border-rose-200';
+      case 'Exams':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'Class Test Day':
+        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      case 'Skill Day':
+        return 'bg-amber-100 text-amber-900 border-amber-200';
+      default:
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden flex flex-col h-full">
+      
+      {/* Month Banner Header — Exact PDF Color Theme */}
+      <div 
+        className="px-6 py-4 text-white flex items-center justify-between shadow-inner"
+        style={{ backgroundColor: month.hexColor }}
+      >
+        <div>
+          <h2 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight">
+            {month.name}
+          </h2>
+          <p className="text-xs sm:text-sm text-white/80 font-medium mt-0.5">
+            {month.gregorianRange}
+          </p>
+        </div>
+
+        <div className="text-right flex flex-col items-end">
+          <img 
+            src="/logo.png" 
+            alt="Xavier International College Logo" 
+            className="h-8 sm:h-10 w-auto object-contain bg-white/95 p-1.5 rounded-lg shadow-xs"
+          />
+        </div>
+      </div>
+
+      {/* Days of Week Header */}
+      <div className="grid grid-cols-7 bg-slate-100 border-b border-slate-200 text-center text-xs font-bold text-slate-600 py-2.5 uppercase tracking-wider">
+        {daysOfWeek.map((day, idx) => (
+          <div key={day} className={idx === 6 ? 'text-rose-600 font-extrabold' : ''}>
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* Monthly Days Grid */}
+      <div className="grid grid-cols-7 flex-1 auto-rows-fr bg-slate-200 gap-px p-px">
+        
+        {/* Leading empty cells */}
+        {Array.from({ length: leadingEmptyCells }).map((_, i) => (
+          <div key={`empty-lead-${i}`} className="bg-slate-50/60 min-h-[75px] sm:min-h-[90px]" />
+        ))}
+
+        {/* Day Cells */}
+        {Array.from({ length: month.totalDays }).map((_, i) => {
+          const dayNum = i + 1;
+          const dayOfWeek = (leadingEmptyCells + i) % 7;
+          const isSaturday = dayOfWeek === 6;
+          const dayEvents = eventsByDay[dayNum] || [];
+          const isSelected = selectedDay === dayNum;
+
+          // Check if any event on this day is a holiday
+          const hasHoliday = isSaturday || dayEvents.some(e => e.mainCategory === 'Holiday');
+          const hasExam = dayEvents.some(e => e.mainCategory === 'Exams');
+          const hasClassTest = dayEvents.some(e => e.mainCategory === 'Class Test Day');
+
+          // Cell background logic matching PDF styling
+          let cellBg = 'bg-white hover:bg-slate-50';
+          if (isSelected) {
+            cellBg = 'bg-amber-50 ring-2 ring-amber-500 z-10';
+          } else if (hasHoliday) {
+            cellBg = 'bg-rose-50/70 hover:bg-rose-100/60';
+          } else if (hasExam) {
+            cellBg = 'bg-blue-50/70 hover:bg-blue-100/60';
+          } else if (hasClassTest) {
+            cellBg = 'bg-emerald-50/70 hover:bg-emerald-100/60';
+          }
+
+          const gregorianStr = getGregorianForNepaliDate(month.index, dayNum);
+
+          return (
+            <div
+              key={`day-${dayNum}`}
+              onClick={() => onSelectDate(dayNum)}
+              className={`${cellBg} min-h-[75px] sm:min-h-[95px] p-1.5 sm:p-2 cursor-pointer transition-all flex flex-col justify-between group relative`}
+            >
+              {/* Top Row: Nepali Date + Gregorian Date */}
+              <div className="flex items-start justify-between">
+                <span className={`text-base sm:text-xl font-bold font-serif leading-none ${
+                  hasHoliday ? 'text-rose-600' : 'text-slate-800'
+                }`}>
+                  {dayNum}
+                </span>
+
+                <span className="text-[10px] sm:text-xs text-slate-400 font-medium tracking-tight">
+                  {gregorianStr}
+                </span>
+              </div>
+
+              {/* Middle: Event Badges / Dots */}
+              <div className="my-1 space-y-1 overflow-hidden max-h-[48px]">
+                {dayEvents.slice(0, 2).map((event) => (
+                  <div
+                    key={event.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectEvent(event);
+                    }}
+                    className={`px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-medium truncate border shadow-2xs hover:brightness-95 transition-all ${getCategoryStyles(event)}`}
+                    title={`${event.title} (${event.category})`}
+                  >
+                    <span className="hidden sm:inline">{event.title}</span>
+                    <span className="sm:hidden">{event.title.length > 12 ? event.title.substring(0, 10) + '...' : event.title}</span>
+                  </div>
+                ))}
+
+                {dayEvents.length > 2 && (
+                  <div className="text-[9px] font-bold text-slate-500 px-1">
+                    +{dayEvents.length - 2} more
+                  </div>
+                )}
+              </div>
+
+              {/* Bottom Dot Indicator for quick scanning */}
+              {dayEvents.length > 0 && (
+                <div className="flex items-center gap-1 mt-auto">
+                  {dayEvents.map((ev, idx) => {
+                    let dotColor = 'bg-purple-500';
+                    if (ev.mainCategory === 'Holiday') dotColor = 'bg-rose-500';
+                    else if (ev.mainCategory === 'Exams') dotColor = 'bg-blue-500';
+                    else if (ev.mainCategory === 'Class Test Day') dotColor = 'bg-emerald-500';
+                    else if (ev.mainCategory === 'Skill Day') dotColor = 'bg-amber-500';
+                    return (
+                      <span
+                        key={`dot-${idx}`}
+                        className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${dotColor}`}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Trailing empty cells */}
+        {Array.from({ length: trailingEmptyCells }).map((_, i) => (
+          <div key={`empty-trail-${i}`} className="bg-slate-50/60 min-h-[75px] sm:min-h-[90px]" />
+        ))}
+      </div>
+
+      {/* Legend Footer — Exact PDF Category Colors */}
+      <div className="bg-slate-50 px-4 py-3 border-t border-slate-200 flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-slate-700">
+        <div className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-full bg-rose-500 shadow-sm" />
+          <span>Holiday</span>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-full bg-slate-400 shadow-sm" />
+          <span>Class Day</span>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-full bg-amber-500 shadow-sm" />
+          <span>Skill Day</span>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-full bg-blue-600 shadow-sm" />
+          <span>Exams</span>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-full bg-emerald-600 shadow-sm" />
+          <span>Class Test Day</span>
+        </div>
+      </div>
+
+    </div>
+  );
+};
