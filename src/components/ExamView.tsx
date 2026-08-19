@@ -1,16 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { CalendarEvent } from '../types/calendar';
 import { getAllEvents } from '../data/calendarData';
-import { Trophy, Clock, Calendar, GraduationCap, CheckCircle } from 'lucide-react';
+import { Trophy, Clock, Calendar, GraduationCap, CheckCircle2 } from 'lucide-react';
 
 interface ExamViewProps {
   onSelectEvent: (event: CalendarEvent) => void;
 }
 
+interface TargetExam {
+  id: string;
+  title: string;
+  nepaliLabel: string;
+  gregorianLabel: string;
+  grade: string;
+  targetDate: string; // ISO format: e.g. "2026-10-06T09:00:00"
+  category: string;
+}
+
 export const ExamView: React.FC<ExamViewProps> = ({ onSelectEvent }) => {
   const allEvents = getAllEvents();
 
-  // Filter Exam-related events
+  // Filter Exam-related events for full list
   const examEvents = allEvents.filter(
     e => e.mainCategory === 'Exams' || 
          e.mainCategory === 'Class Test Day' || 
@@ -23,115 +33,211 @@ export const ExamView: React.FC<ExamViewProps> = ({ onSelectEvent }) => {
     return a.nepaliDate - b.nepaliDate;
   });
 
-  // Major exams for countdown target selection
-  const majorExams = [
-    { title: 'First Terminal Examination', dateStr: '2083-06-20', label: '20–28 Aswin 2083' },
-    { title: 'Second Terminal Examination', dateStr: '2083-09-15', label: '15–24 Poush 2083' },
-    { title: 'Term 3 / Pre-Board Exam', dateStr: '2083-11-30', label: '30 Falgun–10 Chaitra' },
-    { title: 'Grade XII Board Examination', dateStr: '2084-01-13', label: '13 Baisakh 2084' },
-    { title: 'Grade XI Board Examination', dateStr: '2084-01-15', label: '15 Baisakh 2084' },
+  // All Major Exam Targets for simultaneous countdowns
+  const majorExamTargets: TargetExam[] = [
+    {
+      id: 'target-term1',
+      title: 'First Terminal Examination',
+      nepaliLabel: '20–28 Aswin 2083',
+      gregorianLabel: 'Oct 6 – Oct 14, 2026',
+      grade: 'General',
+      targetDate: '2026-10-06T09:00:00',
+      category: 'Internal Exam'
+    },
+    {
+      id: 'target-term2',
+      title: 'Second Terminal Examination',
+      nepaliLabel: '15–24 Poush 2083',
+      gregorianLabel: 'Dec 30, 2026 – Jan 8, 2027',
+      grade: 'General',
+      targetDate: '2026-12-30T09:00:00',
+      category: 'Internal Exam'
+    },
+    {
+      id: 'target-term3',
+      title: 'Term 3 / Pre-Board Examination',
+      nepaliLabel: '30 Falgun–10 Chaitra 2083',
+      gregorianLabel: 'Mar 14 – Mar 24, 2027',
+      grade: 'General',
+      targetDate: '2027-03-14T09:00:00',
+      category: 'Pre-Board'
+    },
+    {
+      id: 'target-xii-prac',
+      title: 'Grade XII Board Practicals',
+      nepaliLabel: '16–19 Chaitra 2083',
+      gregorianLabel: 'Mar 30 – Apr 2, 2027',
+      grade: 'Grade XII',
+      targetDate: '2027-03-30T09:00:00',
+      category: 'Practical Exam'
+    },
+    {
+      id: 'target-xii-board',
+      title: 'Grade XII Board Examination',
+      nepaliLabel: '13 Baisakh 2084',
+      gregorianLabel: 'Apr 26, 2027',
+      grade: 'Grade XII',
+      targetDate: '2027-04-26T09:00:00',
+      category: 'Board Exam'
+    },
+    {
+      id: 'target-xi-board',
+      title: 'Grade XI Board Examination',
+      nepaliLabel: '15 Baisakh 2084',
+      gregorianLabel: 'Apr 28, 2027',
+      grade: 'Grade XI',
+      targetDate: '2027-04-28T09:00:00',
+      category: 'Board Exam'
+    },
+    {
+      id: 'target-xi-prac',
+      title: 'Grade XI Board Practicals',
+      nepaliLabel: '28–31 Baisakh 2084',
+      gregorianLabel: 'May 11 – May 14, 2027',
+      grade: 'Grade XI',
+      targetDate: '2027-05-11T09:00:00',
+      category: 'Practical Exam'
+    }
   ];
 
-  const [selectedTarget, setSelectedTarget] = useState(majorExams[3]); // Grade XII Board Exam as default
-  const [timeLeft, setTimeLeft] = useState({ days: 245, hours: 14, minutes: 22, seconds: 40 });
+  // Tick state for all target countdowns
+  const [nowTime, setNowTime] = useState<number>(Date.now());
 
   useEffect(() => {
-    // Simple simulated countdown ticker
     const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev.seconds > 0) return { ...prev, seconds: prev.seconds - 1 };
-        if (prev.minutes > 0) return { ...prev, minutes: 59, seconds: 59 };
-        if (prev.hours > 0) return { ...prev, hours: prev.hours - 1, minutes: 59, seconds: 59 };
-        if (prev.days > 0) return { ...prev, days: prev.days - 1, hours: 23, minutes: 59, seconds: 59 };
-        return prev;
-      });
+      setNowTime(Date.now());
     }, 1000);
     return () => clearInterval(timer);
   }, []);
 
+  const calculateTimeLeft = (targetDateIso: string) => {
+    const diff = new Date(targetDateIso).getTime() - nowTime;
+    if (diff <= 0) {
+      return { days: 0, hours: 0, minutes: 0, seconds: 0, isPassed: true };
+    }
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((diff / 1000 / 60) % 60);
+    const seconds = Math.floor((diff / 1000) % 60);
+    return { days, hours, minutes, seconds, isPassed: false };
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       
-      {/* Countdown Card Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 rounded-2xl shadow-xl border border-blue-800/40 p-6 sm:p-8 text-white relative overflow-hidden">
-        <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6">
-          
-          <div className="text-center lg:text-left max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs font-semibold border border-blue-400/30 mb-3">
-              <Clock className="w-3.5 h-3.5" />
-              Major Examination Countdown Timer
+      {/* Live Countdowns Grid Section */}
+      <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-5 sm:p-8">
+        
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-5 border-b border-slate-200 gap-3 mb-6">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-extrabold bg-blue-100 text-blue-800 border border-blue-200 uppercase tracking-widest mb-1.5">
+              <Clock className="w-3.5 h-3.5 text-blue-600" />
+              Live Countdown Dashboard
             </div>
-            
-            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-white tracking-tight">
-              {selectedTarget.title}
+            <h2 className="text-xl sm:text-3xl font-serif font-bold text-slate-900">
+              Major Examinations Live Countdowns
             </h2>
-            <p className="text-sm text-blue-200 mt-1 font-medium">
-              Scheduled Date: <span className="text-white font-bold">{selectedTarget.label}</span>
+            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+              Simultaneous live ticking countdown clocks for all terminal, board, and practical exams.
             </p>
-
-            {/* Target Exam Selector Dropdown */}
-            <div className="mt-4 inline-block">
-              <select
-                value={selectedTarget.title}
-                onChange={(e) => {
-                  const target = majorExams.find(m => m.title === e.target.value);
-                  if (target) setSelectedTarget(target);
-                }}
-                className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs font-semibold text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              >
-                {majorExams.map(m => (
-                  <option key={m.title} value={m.title}>
-                    Target: {m.title} ({m.label})
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
 
-          {/* Countdown Clock Display */}
-          <div className="flex items-center gap-3 sm:gap-4 text-center">
-            <div className="bg-slate-800/90 border border-slate-700/80 rounded-xl p-3 sm:p-4 min-w-[70px] sm:min-w-[85px] backdrop-blur-sm">
-              <span className="text-2xl sm:text-4xl font-extrabold text-white font-mono">{timeLeft.days}</span>
-              <span className="block text-[10px] sm:text-xs font-bold uppercase tracking-widest text-slate-400 mt-1">Days</span>
-            </div>
-
-            <span className="text-xl sm:text-2xl font-bold text-slate-600">:</span>
-
-            <div className="bg-slate-800/90 border border-slate-700/80 rounded-xl p-3 sm:p-4 min-w-[70px] sm:min-w-[85px] backdrop-blur-sm">
-              <span className="text-2xl sm:text-4xl font-extrabold text-blue-400 font-mono">{timeLeft.hours}</span>
-              <span className="block text-[10px] sm:text-xs font-bold uppercase tracking-widest text-slate-400 mt-1">Hours</span>
-            </div>
-
-            <span className="text-xl sm:text-2xl font-bold text-slate-600">:</span>
-
-            <div className="bg-slate-800/90 border border-slate-700/80 rounded-xl p-3 sm:p-4 min-w-[70px] sm:min-w-[85px] backdrop-blur-sm">
-              <span className="text-2xl sm:text-4xl font-extrabold text-blue-400 font-mono">{timeLeft.minutes}</span>
-              <span className="block text-[10px] sm:text-xs font-bold uppercase tracking-widest text-slate-400 mt-1">Mins</span>
-            </div>
-
-            <span className="text-xl sm:text-2xl font-bold text-slate-600">:</span>
-
-            <div className="bg-slate-800/90 border border-slate-700/80 rounded-xl p-3 sm:p-4 min-w-[70px] sm:min-w-[85px] backdrop-blur-sm">
-              <span className="text-2xl sm:text-4xl font-extrabold text-cyan-400 font-mono">{timeLeft.seconds}</span>
-              <span className="block text-[10px] sm:text-xs font-bold uppercase tracking-widest text-slate-400 mt-1">Secs</span>
-            </div>
+          <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            7 Synchronized Live Timers
           </div>
-
         </div>
+
+        {/* Grid of All Countdown Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {majorExamTargets.map((target) => {
+            const time = calculateTimeLeft(target.targetDate);
+
+            return (
+              <div
+                key={target.id}
+                className="bg-gradient-to-br from-slate-900 via-xavier-navy to-slate-900 rounded-2xl shadow-lg border border-slate-800 p-5 text-white flex flex-col justify-between relative overflow-hidden group hover:border-blue-500/50 transition-all"
+              >
+                <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
+
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                      {target.category}
+                    </span>
+
+                    {target.grade && target.grade !== 'General' && (
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                        <GraduationCap className="w-3 h-3 text-cyan-400" />
+                        {target.grade}
+                      </span>
+                    )}
+                  </div>
+
+                  <h3 className="text-base sm:text-lg font-serif font-bold text-white leading-snug group-hover:text-cyan-300 transition-colors">
+                    {target.title}
+                  </h3>
+
+                  <div className="mt-2 text-xs text-blue-200/90 font-medium">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                      <span><strong>BS:</strong> {target.nepaliLabel}</span>
+                    </div>
+                    <div className="text-slate-400 text-[11px] mt-0.5 pl-5">
+                      {target.gregorianLabel}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4-Box Countdown Timer */}
+                <div className="mt-5 pt-4 border-t border-slate-800/80">
+                  {time.isPassed ? (
+                    <div className="py-2 text-center bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      Examination In Session / Completed
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-4 gap-2 text-center">
+                      <div className="bg-slate-800/90 border border-slate-700/80 rounded-xl p-2 backdrop-blur-xs">
+                        <span className="text-lg sm:text-2xl font-extrabold text-white font-mono">{time.days}</span>
+                        <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">Days</span>
+                      </div>
+
+                      <div className="bg-slate-800/90 border border-slate-700/80 rounded-xl p-2 backdrop-blur-xs">
+                        <span className="text-lg sm:text-2xl font-extrabold text-blue-400 font-mono">{time.hours}</span>
+                        <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">Hrs</span>
+                      </div>
+
+                      <div className="bg-slate-800/90 border border-slate-700/80 rounded-xl p-2 backdrop-blur-xs">
+                        <span className="text-lg sm:text-2xl font-extrabold text-blue-400 font-mono">{time.minutes}</span>
+                        <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">Mins</span>
+                      </div>
+
+                      <div className="bg-slate-800/90 border border-slate-700/80 rounded-xl p-2 backdrop-blur-xs">
+                        <span className="text-lg sm:text-2xl font-extrabold text-cyan-400 font-mono">{time.seconds}</span>
+                        <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">Secs</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            );
+          })}
+        </div>
+
       </div>
 
-      {/* Examinations Schedule Header & Grid */}
-      <div className="bg-white rounded-xl shadow-md border border-slate-200 p-6">
+      {/* Complete Examinations & Assessment Schedule */}
+      <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-6">
         
         <div className="flex items-center justify-between pb-4 border-b border-slate-200 mb-6">
           <div>
             <h2 className="text-xl sm:text-2xl font-serif font-bold text-slate-900">
-              Examination & Assessment Schedule
+              Complete Assessment & Exam Schedule
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
-              All internal term exams, pre-boards, board practicals, and monthly class tests.
+              All terminal exams, pre-boards, board practicals, and monthly class tests.
             </p>
           </div>
         </div>
