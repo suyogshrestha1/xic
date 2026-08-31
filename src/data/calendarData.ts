@@ -178,7 +178,7 @@ export const MONTHS_DATA: MonthData[] = [
     hexColor: '#148078',
     badgeColor: 'bg-teal-700 text-white',
     totalDays: 31,
-    startDayOfWeek: 0, // Starts on Sunday (Aug 17)
+    startDayOfWeek: 1, // Starts on Monday (Aug 17)
     gregorianStart: { month: 'Aug', day: 17, year: 2026 },
     events: [
       {
@@ -1122,7 +1122,7 @@ export const MONTHS_DATA: MonthData[] = [
     hexColor: '#b38b4d',
     badgeColor: 'bg-amber-700 text-white',
     totalDays: 30,
-    startDayOfWeek: 0, // Starts on Sunday (Mar 15)
+    startDayOfWeek: 1, // Starts on Monday (Mar 15)
     gregorianStart: { month: 'Mar', day: 15, year: 2027 },
     events: [
       {
